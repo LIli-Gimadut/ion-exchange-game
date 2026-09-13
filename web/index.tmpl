@@ -206,6 +206,7 @@ function show_infobox() {
         }
 
         * { box-sizing: border-box; }
+        [hidden] { display: none !important; }
 
         html, body {
             width: 100%;
@@ -379,7 +380,7 @@ function show_infobox() {
 
         /* Pygbag keeps the logical 920×740 surface and scales it without
            changing the pointer coordinate system. */
-        canvas.emscripten {
+        #canvas {
             position: fixed;
             inset: 0;
             z-index: 5;
@@ -397,7 +398,7 @@ function show_infobox() {
             transition: opacity .4s ease;
         }
 
-        canvas.emscripten.is-ready { opacity: 1; }
+        #canvas.is-ready { opacity: 1; }
 
         #fullscreen-button {
             position: fixed;
