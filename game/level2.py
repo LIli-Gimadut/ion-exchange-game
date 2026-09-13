@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import pygame
 
 from chemistry.ions import to_subscript_formula, to_superscript
@@ -291,7 +292,7 @@ def _gradient(size, top, bottom) -> pygame.Surface:
     return surf
 
 
-def run():
+async def run():
     pygame.init()
     screen = pygame.display.set_mode((config.WIDTH, config.HEIGHT))
     pygame.display.set_caption("Уровень 2 — ионные уравнения")
@@ -300,6 +301,7 @@ def run():
     running = True
     while running:
         dt = clock.tick(config.FPS) / 1000.0
+        await asyncio.sleep(0)
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
                 running = False

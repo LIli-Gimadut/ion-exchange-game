@@ -1,3 +1,7 @@
+# /// script
+# dependencies = ["pygame-ce"]
+# ///
+
 """Точка входа.
 
 Уровень 1 (по умолчанию) — «Реакции ионного обмена» (drag-and-drop пробирок).
@@ -6,14 +10,18 @@
 """
 
 import argparse
+import asyncio
+import sys
 
 
-def main():
+async def main():
     parser = argparse.ArgumentParser(description="Реакции ионного обмена")
     parser.add_argument("--level", type=int, default=1, choices=(1, 2, 3),
                         help="1 — РИО (пробирки); 2 — разбор формулы на ионы; "
                              "3 — сокращение ионов-зрителей")
-    args = parser.parse_args()
+    # The browser runtime supplies its own command-line arguments.  The web
+    # build starts the default game, while desktop users keep the level flag.
+    args = parser.parse_args([] if sys.platform == "emscripten" else None)
 
     if args.level == 2:
         from game.level2 import run
@@ -21,8 +29,8 @@ def main():
         from game.cancel_scene import run
     else:
         from game.scene import run
-    run()
+    await run()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

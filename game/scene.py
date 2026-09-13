@@ -6,6 +6,7 @@ headless). `Scene` — отрисовка и обработка событий p
 
 from __future__ import annotations
 
+import asyncio
 import random
 
 import pygame
@@ -616,7 +617,7 @@ class Scene:
                 config.WIDTH // 2, config.HEIGHT - 16)))
 
 
-def run():
+async def run():
     pygame.init()
     screen = pygame.display.set_mode((config.WIDTH, config.HEIGHT))
     pygame.display.set_caption(config.TITLE)
@@ -626,6 +627,8 @@ def run():
     running = True
     while running:
         dt = clock.tick(config.FPS) / 1000.0
+        # Yield once per frame so the browser can paint and process input.
+        await asyncio.sleep(0)
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
                 running = False
