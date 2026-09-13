@@ -1,0 +1,671 @@
+<html lang="ru"><script src="{{cookiecutter.cdn}}pythons.js" type=module id="site" data-python="python{{cookiecutter.PYBUILD}}" data-LINES=42 data-COLUMNS=132 data-os="vtx,snd,gui" async defer>#<!--
+
+print("""
+Loading {{cookiecutter.title}} from {{cookiecutter.archive}}.apk
+    Pygbag Version : {{cookiecutter.version}}
+    Template Version : 0.9.3
+    Python  : {{cookiecutter.PYBUILD}}
+    CDN URL : {{cookiecutter.cdn}}
+    Screen  : {{cookiecutter.width}}x{{cookiecutter.height}}
+    Title   : {{cookiecutter.title}}
+    Folder  : {{cookiecutter.directory}}
+    Authors : {{cookiecutter.authors}}
+    SPDX-License-Identifier: {{cookiecutter.spdx}}
+
+""")
+
+import sys
+import asyncio
+import platform
+import json
+from pathlib import Path
+
+# do not rename
+async def custom_site():
+    import embed
+    platform.document.body.style.background = "#160c2a"
+
+    platform.window.transfer.hidden = false
+    platform.window.canvas.style.visibility = "visible"
+
+
+    bundle = "{{cookiecutter.archive}}"
+
+    # the C or js loader could do that but be explicit.
+    appdir = Path(f"/data/data/{bundle}") # /data/data/{{cookiecutter.archive}}
+    appdir.mkdir()
+
+
+    # unpack filesystem from compressed archive into work dir
+    if platform.window.location.host.find('.itch.zone')>0:
+        import zipfile
+        async with platform.fopen("{{cookiecutter.archive}}.apk", "rb") as archive:
+            with zipfile.ZipFile(archive) as zip_ref:
+                zip_ref.extractall(appdir.as_posix())
+    else:
+        import tarfile
+        async with platform.fopen("{{cookiecutter.archive}}.tar.gz", "rb") as archive:
+            tar = tarfile.open(fileobj=archive, mode="r:gz")
+            tar.extractall(path=appdir.as_posix(), filter='tar')
+            tar.close()
+
+    # preloader will change to work dir and prepend it to sys.path
+    platform.run_main(PyConfig, loaderhome= appdir / "assets", loadermain=None)
+
+
+    # wait preloading complete : that includes images and wasm compilation of bundled modules
+    while embed.counter()<0:
+        await asyncio.sleep(.1)
+
+    main = appdir / "assets" / "main.py"
+
+    # TODO: test for window.webkitAudioContext and block aio loop until gesture if accessing media manager play
+    # before a gesture is recorded ( touch or click )
+
+    # test/wait user media interaction
+    if not platform.window.MM.UME:
+
+        # now that apk is mounted we have access to font cache
+        # but we need to fill __file__ that is not yet set
+        __import__(__name__).__file__ = main
+
+        # now make a prompt
+        msg  = "Ready to start ! Please click/touch page"
+        platform.window.infobox.innerText = msg
+        print("\n"*4, f"    * Waiting for media user engagement. {msg} *" , "\n"*4)
+
+        while not platform.window.MM.UME:
+            await asyncio.sleep(.1)
+
+    # start async top level machinery if not started and add a console in any case if requested.
+    await TopLevel_async_handler.start_toplevel(platform.shell, console=window.python.config.debug)
+
+    # now that apk is mounted we have access to font cache
+    # but we need to fill __file__/__name__ that are not yet set
+    __import__(__name__).__file__ = main
+
+
+    def ui_callback(pkg):
+        platform.window.status.innerText = f"Загружаем {pkg}…"
+
+    await shell.source(main, callback=ui_callback)
+
+    # if you don't reach that step
+    # your main.py has an infinite sync loop somewhere !
+
+    platform.window.infobox.style.display = "none"
+    platform.window.transfer.classList.add("is-hidden")
+    platform.window.canvas.classList.add("is-ready")
+    platform.document.getElementById("fullscreen-button").classList.add("is-visible")
+    platform.window.config.gui_divider = 1
+    platform.window.window_resize()
+    print("default.tmpl: done")
+
+    shell.interactive()
+
+asyncio.run( custom_site() )
+
+
+
+
+
+
+
+
+
+
+
+
+# BEGIN BLOCK
+#
+# now this is the html part you can (and should) customize
+# It is not mandatory : pygame-script when it reads the first line (also called
+# shebang ) of above code create absolute minimal widget set
+# required for running with default rules
+#
+# do not alter that comment block it is separating python code from html code
+# =============================================================================
+# --></script><head><!--
+//=============================================================================
+//
+//
+//
+//
+//
+//
+//
+
+    {%- if cookiecutter.comment != "" -%}
+{{cookiecutter.comment}}
+    {% endif %}
+
+--><script type="application/javascript">
+// END BLOCK
+
+
+
+// this dict is available under PyConfig.config from __main__
+
+config = {
+    xtermjs : "{{cookiecutter.xtermjs}}" ,
+    _sdl2 : "canvas",
+    user_canvas : 0,
+    user_canvas_managed : 0,
+    gui_divider : 2,
+    ume_block : {{cookiecutter.ume_block}},
+    can_close : {{cookiecutter.can_close}},
+    archive : "{{cookiecutter.archive}}",
+    gui_debug : 2,
+    cdn : "{{cookiecutter.cdn}}",
+    autorun : {{cookiecutter.autorun}},
+    PYBUILD : "{{cookiecutter.PYBUILD}}",
+    fb_ar   :  1.77,
+    fb_width : "{{cookiecutter.width}}",
+    fb_height : "{{cookiecutter.height}}"
+}
+
+function show_infobox() {
+    infobox.style.display = "block";
+
+    // Measure box
+    const w = infobox.offsetWidth;
+    const h = infobox.offsetHeight;
+
+    // Center in viewport
+    const left = (window.innerWidth - w) / 2;
+    const top = (window.innerHeight - h) / 2;
+
+    infobox.style.left = left + "px";
+    infobox.style.top = top + "px";
+}
+
+</script>
+
+    <title>{{cookiecutter.title}}</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, viewport-fit=cover, user-scalable=no">
+    <meta name="theme-color" content="#210b2c">
+    <meta name="description" content="Интерактивная игра о реакциях ионного обмена">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+
+
+    <link rel="icon" type="image/png" href="favicon.png" sizes="16x16">
+
+    <style>
+        :root {
+            color-scheme: dark;
+            font-family: Montserrat, Inter, ui-rounded, system-ui, -apple-system,
+                BlinkMacSystemFont, "Segoe UI", sans-serif;
+            --ink: #fff;
+            --muted: #d7c4ea;
+            --lavender: #bc96e6;
+            --gold: #ffd166;
+            --plum: #210b2c;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            width: 100%;
+            min-height: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            overscroll-behavior: none;
+            background:
+                radial-gradient(circle at 15% 10%, rgba(188, 150, 230, .25), transparent 34%),
+                radial-gradient(circle at 88% 85%, rgba(255, 209, 102, .16), transparent 34%),
+                linear-gradient(145deg, #210b2c 0%, #241842 48%, #111226 100%);
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            opacity: .35;
+            background-image: radial-gradient(rgba(255,255,255,.24) .7px, transparent .7px);
+            background-size: 22px 22px;
+        }
+
+        #transfer {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: grid;
+            place-items: center;
+            padding: max(24px, env(safe-area-inset-top))
+                max(24px, env(safe-area-inset-right))
+                max(24px, env(safe-area-inset-bottom))
+                max(24px, env(safe-area-inset-left));
+            background: rgba(20, 12, 37, .78);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            transition: opacity .45s ease, visibility .45s ease;
+        }
+
+        #transfer.is-hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .loader-card {
+            position: relative;
+            width: min(100%, 430px);
+            padding: clamp(28px, 6vw, 46px);
+            overflow: hidden;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,.14);
+            border-radius: 28px;
+            background: linear-gradient(145deg, rgba(255,255,255,.12), rgba(255,255,255,.05));
+            box-shadow: 0 28px 80px rgba(8, 4, 20, .45), inset 0 1px rgba(255,255,255,.14);
+        }
+
+        .loader-card::after {
+            content: "";
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            right: -90px;
+            top: -100px;
+            border-radius: 50%;
+            background: rgba(255, 209, 102, .17);
+            filter: blur(8px);
+        }
+
+        .atom {
+            position: relative;
+            width: 82px;
+            height: 82px;
+            margin: 0 auto 24px;
+        }
+
+        .atom::before {
+            content: "";
+            position: absolute;
+            inset: 32px;
+            z-index: 2;
+            border-radius: 50%;
+            background: var(--gold);
+            box-shadow: 0 0 26px rgba(255, 209, 102, .7);
+        }
+
+        .orbit {
+            position: absolute;
+            inset: 17px 2px;
+            border: 2px solid rgba(218, 190, 244, .8);
+            border-radius: 50%;
+            animation: orbit 2.8s linear infinite;
+        }
+
+        .orbit:nth-child(2) { transform: rotate(60deg); animation-delay: -.9s; }
+        .orbit:nth-child(3) { transform: rotate(-60deg); animation-delay: -1.8s; }
+
+        .orbit::after {
+            content: "";
+            position: absolute;
+            width: 9px;
+            height: 9px;
+            top: -4px;
+            left: 50%;
+            border-radius: 50%;
+            background: var(--lavender);
+            box-shadow: 0 0 12px rgba(188, 150, 230, .8);
+        }
+
+        @keyframes orbit { to { rotate: 360deg; } }
+
+        .loader-kicker {
+            margin: 0 0 8px;
+            color: var(--gold);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+        }
+
+        .loader-title {
+            margin: 0;
+            color: var(--ink);
+            font-size: clamp(25px, 7vw, 34px);
+            line-height: 1.08;
+            letter-spacing: -.035em;
+        }
+
+        #status {
+            margin: 16px 0 18px;
+            min-height: 1.4em;
+            color: var(--muted);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        #progress {
+            display: block;
+            width: 100%;
+            height: 8px;
+            overflow: hidden;
+            border: 0;
+            border-radius: 999px;
+            appearance: none;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,.1);
+        }
+
+        #progress::-webkit-progress-bar { background: rgba(255,255,255,.1); }
+        #progress::-webkit-progress-value {
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--lavender), var(--gold));
+            box-shadow: 0 0 18px rgba(188, 150, 230, .45);
+            transition: width .2s ease;
+        }
+        #progress::-moz-progress-bar {
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--lavender), var(--gold));
+        }
+
+        .loader-note {
+            margin: 16px 0 0;
+            color: rgba(255,255,255,.52);
+            font-size: 12px;
+        }
+
+        #infobox { display: none; }
+        div.emscripten { text-align: center; }
+        div.emscripten_border { border: 0; }
+
+        /* Pygbag keeps the logical 920×740 surface and scales it without
+           changing the pointer coordinate system. */
+        canvas.emscripten {
+            position: fixed;
+            inset: 0;
+            z-index: 5;
+            display: block;
+            max-width: 100vw;
+            max-height: 100dvh;
+            padding: 0;
+            margin: auto;
+            border: 0;
+            outline: none;
+            background: transparent;
+            touch-action: none;
+            filter: drop-shadow(0 24px 54px rgba(4, 2, 14, .34));
+            opacity: 0;
+            transition: opacity .4s ease;
+        }
+
+        canvas.emscripten.is-ready { opacity: 1; }
+
+        #fullscreen-button {
+            position: fixed;
+            z-index: 20;
+            right: max(14px, env(safe-area-inset-right));
+            bottom: max(14px, env(safe-area-inset-bottom));
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border: 1px solid rgba(255,255,255,.18);
+            border-radius: 999px;
+            color: var(--ink);
+            font: 700 13px/1 inherit;
+            background: rgba(33, 11, 44, .72);
+            box-shadow: 0 10px 30px rgba(0,0,0,.22);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            cursor: pointer;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(8px);
+            transition: opacity .25s ease, transform .25s ease, background .2s ease;
+        }
+
+        #fullscreen-button.is-visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: none;
+        }
+
+        #fullscreen-button:hover { background: rgba(79, 53, 107, .9); }
+        #fullscreen-button svg { width: 16px; height: 16px; }
+
+        #orientation-hint {
+            position: fixed;
+            z-index: 19;
+            top: max(12px, env(safe-area-inset-top));
+            left: 50%;
+            display: none;
+            width: max-content;
+            max-width: calc(100vw - 24px);
+            padding: 9px 13px;
+            border: 1px solid rgba(255,255,255,.14);
+            border-radius: 999px;
+            color: var(--ink);
+            font-size: 12px;
+            font-weight: 700;
+            text-align: center;
+            background: rgba(33, 11, 44, .8);
+            backdrop-filter: blur(10px);
+            transform: translateX(-50%);
+        }
+
+        .topright { position: absolute; top: 0; right: 0; }
+        .bottomright { position: absolute; top: 40%; right: 0; }
+        .trinfo { position: relative; right: 0; border: 0; }
+        .framed { position: relative; top: 150px; right: 10px; border: 0; }
+
+        @media (max-width: 720px) and (orientation: portrait) {
+            #orientation-hint { display: block; }
+            #fullscreen-button span { display: none; }
+            #fullscreen-button { padding: 11px; }
+        }
+
+        @media (max-height: 520px) {
+            .loader-card { padding: 22px 30px; }
+            .atom { width: 62px; height: 62px; margin-bottom: 14px; }
+            .atom::before { inset: 24px; }
+            .orbit { inset: 13px 1px; }
+            .loader-note { display: none; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: .01ms !important;
+                transition-duration: .01ms !important;
+            }
+        }
+    </style>
+
+    <script>
+/*
+        if (navigator.serviceWorker)
+            navigator.serviceWorker.register("{{cookiecutter.cdn}}pygbag{{cookiecutter.version}}.js")
+        else
+            console.warn("Service workers not supported")
+*/
+    </script>
+
+    <script src="{{cookiecutter.cdn}}/browserfs.min.js"></script>
+
+</head>
+
+<body>
+
+    <div id="transfer" role="status" aria-live="polite">
+        <div class="loader-card">
+            <div class="atom" aria-hidden="true">
+                <span class="orbit"></span>
+                <span class="orbit"></span>
+                <span class="orbit"></span>
+            </div>
+            <p class="loader-kicker">Химическая лаборатория</p>
+            <h1 class="loader-title">Смешиваем компоненты</h1>
+            <div id="status">Готовим игру…</div>
+            <progress value="0" max="100" id="progress" aria-label="Загрузка игры"></progress>
+            <p class="loader-note">Первый запуск может занять несколько секунд</p>
+        </div>
+    </div>
+
+
+
+    <canvas class="emscripten" id="canvas"
+width="1px"
+height="1px"
+    oncontextmenu="event.preventDefault()" tabindex=1>
+    </canvas>
+
+    <canvas class="emscripten" id="canvas3d"
+width="{{cookiecutter.width}}px"
+height="{{cookiecutter.height}}px"
+    oncontextmenu="event.preventDefault()" tabindex=1 hidden>
+    </canvas>
+
+    <div id="infobox">Loading, please wait ...</div>
+
+    <div id="orientation-hint">↻ В альбомной ориентации играть удобнее</div>
+
+    <button id="fullscreen-button" type="button" aria-label="Открыть игру во весь экран">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+            <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/>
+        </svg>
+        <span>Во весь экран</span>
+    </button>
+
+    <div id=html></div>
+
+    <div id=crt  class=bottomright >
+
+        <div id="system" hidden>
+            <div class="button-container">
+                <button id="aiostop" disabled>AIO ⏏︎</button>
+                <button id="aiopaused_true" disabled>AIO ■</button>
+                <button id="aiopaused_false" disabled>AIO ▶</button>
+                <button id="pygame_mixer_music_pause" disabled>Music ■</button>
+            </div>
+
+            <div class="button-container">
+                <div id=load_min>min</div>
+                <div id=load_avg>avg</div>
+                <div id=load_max>max</div>
+              <button id="load_rst" disabled>RESET</button>
+            </div>
+
+            <div id="level">(battery level unknown)</div>
+            <div id="stateBattery">(charging state unknown)</div>
+
+        </div>
+
+        <div id=box class="emscripten_border" hidden=true>
+
+            <div id="info" class="trinfo"></div>
+
+            <iframe id="iframe" class="framed" name="iframe"
+width="470px" height="90%"
+allowtransparency="true"
+style="z-index: 10;"
+style="background: #FFFFFF;"
+frameborder="1"
+                allowfullscreen="true"
+                webkitallowfullscreen="true"
+                msallowfullscreen="true"
+                mozallowfullscreen="true"
+                sandbox="allow-same-origin allow-top-navigation allow-scripts allow-pointer-lock"
+                allow="autoplay; fullscreen *; geolocation; microphone; camera; midi; monetization; xr-spatial-tracking; gamepad; gyroscope; accelerometer; xr; cross-origin-isolated"
+                src="{{cookiecutter.cdn}}empty.html"
+                scrolling="yes">
+            </iframe>
+        </div>
+
+    </div>
+
+
+    <div id="dlg" hidden>
+        <input type="file" id="dlg_multifile" multiple accept="image/*">
+        <label for="dlg_multifile">Select files</label>
+    </div>
+
+    <div id="pyconsole">
+        <div id="terminal" tabIndex=1 align="left"></div>
+    </div>
+
+    <script type="application/javascript">
+
+    globalThis.__canvas_resized = (self, ecw, ech) => {
+        console.warn("TODO: panda3d canvas monitor", self, ecw, ech)
+    }
+
+    async function custom_onload(debug_hidden) {
+        // this is called before anything python is loaded
+        // make your js customization here
+        console.log(__FILE__, "custom_onload")
+
+        pyconsole.hidden = debug_hidden
+        system.hidden = debug_hidden
+        transfer.hidden = false
+        info.hidden = debug_hidden
+        box.hidden =  debug_hidden
+
+        infobox.style.display = "none"
+    }
+
+    function custom_prerun(){
+        // no python main and no (MEMFS + VFS) yet.
+        console.log(__FILE__, "custom_prerun")
+
+    }
+
+    function custom_postrun(){
+        // python main and no VFS filesystem yet.
+        console.log(__FILE__, "custom_postrun")
+
+    }
+
+    function debug() {
+        // allow to gain access to dev tools from js console
+        // but only on desktop. difficult to reach when in iframe
+        python.config.debug = true
+        custom_onload(false)
+        Module.PyRun_SimpleString("shell.uptime()")
+        window_resize()
+    }
+
+    function info_inline(data){
+        document.getElementById("info").innerHTML = data
+    }
+
+    function info_online(url) {
+        // display info about current APK
+        fetch( url /*, options */)
+            .then((response) => response.text())
+            .then((html) => {
+                info_inline(html);
+        })
+        .catch((error) => {
+            console.warn(error);
+        });
+    }
+
+    function frame_online(url) {
+        window.frames["iframe"].location = url;
+    }
+
+    const fullscreenButton = document.getElementById("fullscreen-button")
+    fullscreenButton.addEventListener("click", async () => {
+        try {
+            if (!document.fullscreenElement) {
+                await document.documentElement.requestFullscreen()
+            } else {
+                await document.exitFullscreen()
+            }
+        } catch (error) {
+            console.warn("Fullscreen is unavailable", error)
+        }
+    })
+
+    </script>
+
+</body>
+</html>
