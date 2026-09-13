@@ -57,6 +57,7 @@ _IONS = [
     Ion("NH4", "NH4", +1, polyatomic=True),
     Ion("K", "K", +1),
     Ion("Na", "Na", +1),
+    Ion("Li", "Li", +1),
     Ion("Ag", "Ag", +1),
     Ion("Ba", "Ba", +2),
     Ion("Ca", "Ca", +2),

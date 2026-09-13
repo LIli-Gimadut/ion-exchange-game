@@ -9,9 +9,9 @@ from chemistry.reactions import is_clean_no_reaction, reacts
 from chemistry.substances import SUBSTANCES
 
 # Регрессионные якоря (меняются только при осознанном изменении химии).
-N_REAGENTS = 102
-N_REACTING_PAIRS = 1423
-EFFECT_COUNTS = {"GAS": 142, "WATER": 26, "PRECIPITATE": 1255}
+N_REAGENTS = 104
+N_REACTING_PAIRS = 1565
+EFFECT_COUNTS = {"GAS": 165, "WATER": 41, "PRECIPITATE": 1359}
 
 
 @pytest.mark.parametrize(

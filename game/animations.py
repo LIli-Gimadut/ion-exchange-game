@@ -129,12 +129,12 @@ class GasEffect(_Effect):
                 b[0] = random.uniform(WALL + 6, config.TUBE_W - WALL - 6)
             pygame.draw.circle(surface, (255, 255, 255),
                                (int(ox + b[0]), int(oy + b[1])), int(b[2]), 1)
-        # формула газа всплывает над пробиркой
-        rise = _lerp(0, 40, _clamp01(self.t / 0.8))
+        # формула газа проявляется над пробиркой — на одном уровне с подписью
+        # осадка (oy - 14), не выше. Газы бесцветны → подпись белым.
         alpha = int(_lerp(0, 255, _clamp01(self.t / 0.4)))
-        surf = render_formula(self.formula, big, small, config.ACCENT).copy()
+        surf = render_formula(self.formula, big, small, (255, 255, 255)).copy()
         surf.set_alpha(alpha)
-        rect = surf.get_rect(center=(ox + config.TUBE_W // 2, oy - 10 - int(rise)))
+        rect = surf.get_rect(center=(ox + config.TUBE_W // 2, oy - 14))
         surface.blit(surf, rect)
 
 
@@ -160,7 +160,8 @@ class PrecipitateEffect(_Effect):
                 pt[1] += 70 * (1 / config.FPS)
             pygame.draw.circle(surface, self.color[:3],
                                (int(ox + pt[0]), int(oy + pt[1])), int(pt[2]))
-        surf = render_formula(self.formula, big, small, config.INK)
+        # подпись осадка — цветом самого осадка, без обводки
+        surf = render_formula(self.formula, big, small, self.color[:3])
         rect = surf.get_rect(center=(ox + config.TUBE_W // 2, oy - 14))
         surface.blit(surf, rect)
 
@@ -176,7 +177,7 @@ class WaterEffect(_Effect):
         ox, oy = main_tube.x, main_tube.y
         alpha = int(_lerp(0, 255, _clamp01(self.t / 0.6)))
         scale = _lerp(0.7, 1.0, _clamp01(self.t / 0.6))
-        base = render_formula(self.formula, big, small, config.ACCENT)
+        base = render_formula(self.formula, big, small, config.WATER_TINT)
         w = max(1, int(base.get_width() * scale))
         h = max(1, int(base.get_height() * scale))
         surf = pygame.transform.smoothscale(base, (w, h)).copy()

@@ -15,6 +15,7 @@ import random
 from dataclasses import dataclass
 
 from chemistry import Effect, ReactionResult, Substance, SUBSTANCES, react
+from chemistry.describe import precipitate_is_colored
 from chemistry.reactions import is_clean_no_reaction, reacts
 
 N_OPTIONS = 3
@@ -42,6 +43,8 @@ def _ion_disjoint(main: Substance, s: Substance) -> bool:
 _INERT: dict[str, list[Substance]] | None = None
 # Допустимые пары (main, correct) по типам эффекта — у main есть ≥2 дистрактора.
 _TRIPLES: dict[Effect, list[tuple[Substance, Substance]]] | None = None
+# Пары (main, correct), дающие цветной (не белый) осадок.
+_COLORED_PRECIP: list[tuple[Substance, Substance]] | None = None
 
 
 def _build_graph():
@@ -78,21 +81,40 @@ def _ensure_graph():
         _build_graph()
 
 
+def _ensure_colored():
+    global _COLORED_PRECIP
+    if _COLORED_PRECIP is None:
+        _ensure_graph()
+        assert _TRIPLES is not None
+        _COLORED_PRECIP = [
+            (m, c) for (m, c) in _TRIPLES["PRECIPITATE"]
+            if precipitate_is_colored(react(m, c))  # type: ignore[arg-type]
+        ]
+
+
 def generate(rng: random.Random | None = None,
-             effect: Effect | None = None) -> Round:
+             effect: Effect | None = None,
+             colored_precipitate: bool = False) -> Round:
     """Случайный валидный раунд.
 
     Тип эффекта выбирается равномерно (газ/осадок/вода) для разнообразия анимаций;
-    можно задать явно через `effect`. Передайте seeded Random для детерминизма.
+    можно задать явно через `effect`. При `colored_precipitate=True` гарантированно
+    выбирается реакция с цветным (не белым) осадком. Передайте seeded Random для
+    детерминизма.
     """
     _ensure_graph()
     rng = rng or random.Random()
     assert _TRIPLES is not None and _INERT is not None
 
-    if effect is None:
-        available = [e for e, lst in _TRIPLES.items() if lst]
-        effect = rng.choice(available)
-    main, correct = rng.choice(_TRIPLES[effect])
+    if colored_precipitate:
+        _ensure_colored()
+        assert _COLORED_PRECIP
+        main, correct = rng.choice(_COLORED_PRECIP)
+    else:
+        if effect is None:
+            available = [e for e, lst in _TRIPLES.items() if lst]
+            effect = rng.choice(available)
+        main, correct = rng.choice(_TRIPLES[effect])
     distractors = rng.sample(_INERT[main.id], N_OPTIONS - 1)
 
     options = [correct, *distractors]

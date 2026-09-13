@@ -32,7 +32,7 @@ _CATION_COLOR = {
 _ACID_ANIONS = ["F", "Cl", "Br", "I", "S", "SO3", "SO4", "NO3", "NO2", "PO4"]
 
 # Щёлочи — только растворимые основания (реальные реактивы-растворы).
-_ALKALI_CATIONS = ["Na", "K", "Ba"]
+_ALKALI_CATIONS = ["Na", "K", "Ba", "Li", "Ca"]
 
 
 @dataclass(frozen=True)

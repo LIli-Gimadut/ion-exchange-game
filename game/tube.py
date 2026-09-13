@@ -16,21 +16,32 @@ BOTTOM_R = 20
 
 
 class Tube:
-    def __init__(self, substance: Substance, x: int, y: int, level: float = 0.62):
+    def __init__(self, substance: Substance, x: int, y: int, level: float = 0.62,
+                 scale: float = 1.0):
         self.substance = substance
         self.x = x
         self.y = y
         self.level = level  # 0..1 доля заполнения
+        self.scale = scale  # 1.0 — основная; <1 — вариант поменьше
+        self.color_override = None  # напр. голубоватый оттенок для воды
 
     # --- геометрия ---
     @property
+    def w(self) -> int:
+        return round(config.TUBE_W * self.scale)
+
+    @property
+    def h(self) -> int:
+        return round(config.TUBE_H * self.scale)
+
+    @property
     def rect(self) -> pygame.Rect:
-        return pygame.Rect(self.x, self.y, config.TUBE_W, config.TUBE_H)
+        return pygame.Rect(self.x, self.y, self.w, self.h)
 
     @property
     def mouth(self) -> tuple[int, int]:
         """Точка горлышка (для струи при переливании)."""
-        return self.x + config.TUBE_W // 2, self.y + 24
+        return self.x + self.w // 2, self.y + round(24 * self.scale)
 
     # --- отрисовка ---
     def _liquid_surface(self, color, level: float) -> pygame.Surface:
@@ -59,15 +70,18 @@ class Tube:
         """Рисует жидкость + стекло. pos/tilt/level/color — для анимаций."""
         x, y = pos if pos else (self.x, self.y)
         level = self.level if level is None else level
-        color = color if color is not None else self.substance.color
+        if color is None:
+            color = self.color_override or self.substance.color
 
         comp0 = pygame.Surface((config.TUBE_W, config.TUBE_H), pygame.SRCALPHA)
         comp0.blit(self._liquid_surface(color, level), (0, 0))
         comp0.blit(assets.tube_image(), (0, 0))
+        if self.scale != 1.0:
+            comp0 = pygame.transform.smoothscale(comp0, (self.w, self.h))
 
         if tilt:
             comp0 = pygame.transform.rotate(comp0, tilt)
-            r = comp0.get_rect(center=(x + config.TUBE_W // 2, y + config.TUBE_H // 2))
+            r = comp0.get_rect(center=(x + self.w // 2, y + self.h // 2))
             target.blit(comp0, r.topleft)
         else:
             target.blit(comp0, (x, y))
@@ -76,5 +90,5 @@ class Tube:
                    pos=None):
         x, y = pos if pos else (self.x, self.y)
         surf = render_formula(self.substance.formula, big, small, color)
-        rect = surf.get_rect(midtop=(x + config.TUBE_W // 2, y + config.TUBE_H + 8))
+        rect = surf.get_rect(midtop=(x + self.w // 2, y + self.h + 6))
         target.blit(surf, rect)

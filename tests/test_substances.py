@@ -34,13 +34,22 @@ def test_color_is_rgba():
 
 
 def test_reagents_are_soluble():
-    """Реагенты-растворы должны быть растворимы (соли 'Р', щёлочи 'Р')."""
+    """Реагенты-растворы должны быть растворимы.
+
+    Соли — только 'Р'. Щёлочи — растворы оснований, тоже 'Р', с единственным
+    точечным исключением: Ca(OH)2 малорастворима ('М'), но в школьном курсе это
+    щёлочь (известковая вода). Все прочие щёлочи обязаны быть 'Р'.
+    """
     for s in SUBSTANCES:
         if s.kind == SALT:
             assert solubility(s.cation_key, s.anion_key) == "Р", s.id
         elif s.kind == ALKALI:
             assert s.anion_key == "OH"
-            assert solubility(s.cation_key, "OH") == "Р", s.id
+            sol = solubility(s.cation_key, "OH")
+            if s.cation_key == "Ca":
+                assert sol == "М", s.id      # известковая вода — исключение
+            else:
+                assert sol == "Р", s.id
         else:  # кислота
             assert s.cation_key == "H"
 
